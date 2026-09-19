@@ -1,0 +1,93 @@
+# =============================================================================
+# .github/workflows/build-cocukos.yml
+#
+# Bu workflow, GitHub'in ucretsiz Ubuntu runner'ini kullanarak CocukOS ISO'sunu
+# TAMAMEN OTOMATIK olarak derler. Hicbir Linux makineye veya elle ISO indirmeye
+# gerek yoktur.
+#
+# This workflow uses GitHub's free Ubuntu runner to build the CocukOS ISO
+# FULLY AUTOMATICALLY. No Linux machine or manual ISO download is needed.
+#
+# NASIL CALISTIRILIR / HOW TO RUN:
+#   1. Bu projeyi bir GitHub reposuna push edin (PUBLIC repo onerilir, cunku
+#      olusan ISO ~5GB ve public repolarda Actions depolama kotasi cok daha
+#      genistir).
+#      Push this project to a GitHub repo (PUBLIC is recommended, since the
+#      resulting ISO is ~5GB and public repos get a much larger Actions
+#      storage quota).
+#   2. GitHub'da reponun "Actions" sekmesine gidin.
+#      Go to the "Actions" tab of the repo on GitHub.
+#   3. "CocukOS ISO Derle / Build CocukOS ISO" workflow'unu secin ve
+#      "Run workflow" butonuna tiklayin.
+#      Select the "CocukOS ISO Derle / Build CocukOS ISO" workflow and click
+#      "Run workflow".
+#   4. ~30-60 dakika sonra (Actions calisma suresine bagli) is tamamlaninca,
+#      calisma sayfasindaki "Artifacts" bolumunden ISO ve SHA256 dosyasini
+#      indirebilirsiniz.
+#      After ~30-60 minutes, once the run finishes, download the ISO and its
+#      SHA256 file from the "Artifacts" section of the run page.
+# =============================================================================
+name: "CocukOS ISO Derle / Build CocukOS ISO"
+
+on:
+  workflow_dispatch:
+    inputs:
+      ubuntu_iso_url:
+        description: "Kaynak Ubuntu ISO adresi / Source Ubuntu ISO URL"
+        required: false
+        default: "https://releases.ubuntu.com/26.04/ubuntu-26.04.1-desktop-amd64.iso"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: "Kodu al / Checkout code"
+        uses: actions/checkout@v4
+
+      - name: "Disk alani acilsin / Free up disk space"
+        run: |
+          set -x
+          # GitHub runner'inda varsayilan olarak kurulu, bu proje icin
+          # gereksiz olan buyuk arac zincirlerini kaldirarak ~25-30GB
+          # ek alan aciyoruz.
+          # Removes large preinstalled toolchains we don't need for this
+          # project, freeing up ~25-30GB of extra space.
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android \
+                      /opt/ghc /opt/hostedtoolcache/CodeQL \
+                      /usr/local/.ghcup /opt/az /usr/local/share/boost \
+                      /usr/lib/jvm || true
+          sudo docker image prune --all --force || true
+          df -h
+
+      - name: "Gerekli paketler kuruluyor / Install required packages"
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends \
+              squashfs-tools xorriso isolinux syslinux-utils rsync wget
+
+      - name: "Script izinleri / Script permissions"
+        run: |
+          chmod +x build.sh scripts/*.sh scripts/lib/*.sh test/*.sh
+          chmod +x chroot-payload/usr/local/sbin/*.sh
+
+      - name: "CocukOS ISO derleniyor / Build CocukOS ISO"
+        env:
+          COCUKOS_WORKDIR: /mnt/cocukos-work
+          COCUKOS_OUTDIR: /mnt/cocukos-output
+          COCUKOS_UBUNTU_ISO_URL: ${{ github.event.inputs.ubuntu_iso_url }}
+        run: |
+          sudo -E ./build.sh auto
+
+      - name: "Sonuc dosyalari listeleniyor / List result files"
+        run: ls -lh /mnt/cocukos-output
+
+      - name: "ISO'yu artifact olarak yukle / Upload ISO as artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: CocukOS-26.04.1-amd64-iso
+          path: |
+            /mnt/cocukos-output/CocukOS-26.04.1-amd64.iso
+            /mnt/cocukos-output/CocukOS-26.04.1-amd64.iso.sha256
+          retention-days: 14
+          compression-level: 0
