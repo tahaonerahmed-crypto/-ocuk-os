@@ -3,11 +3,11 @@
 #
 # Bu workflow, GitHub'in ucretsiz Ubuntu runner'ini kullanarak CocukOS ISO'sunu
 # TAMAMEN OTOMATIK olarak derler. build.sh dosyasini repo icinde nerede olursa
-# olsun kendisi bulur, boylece klasor yapisi hatalarina karsi dayaniklidir.
+# olsun (ic ice klasorler dahil, 4 seviyeye kadar) kendisi bulur.
 #
 # This workflow builds the CocukOS ISO FULLY AUTOMATICALLY on GitHub's free
-# Ubuntu runner. It finds build.sh wherever it is in the repo, so it is
-# resilient to folder-structure mistakes.
+# Ubuntu runner. It finds build.sh wherever it is in the repo (nested folders
+# included, up to 4 levels deep).
 # =============================================================================
 name: "CocukOS ISO Derle / Build CocukOS ISO"
 
@@ -32,16 +32,18 @@ jobs:
         run: |
           set -e
           # build.sh dosyasi repo icinde nerede olursa olsun (ana dizinde
-          # veya bir alt klasorde) otomatik olarak bulunur, boylece dosyalarin
-          # yanlislikla bir alt klasore yuklenmis olmasi sorun olmaz.
+          # veya ic ice birden fazla alt klasorde) otomatik olarak bulunur,
+          # boylece dosyalarin yanlislikla ic ice klasorlere yuklenmis
+          # olmasi sorun olmaz.
           #
-          # Finds build.sh wherever it is inside the repo (root or a
-          # subfolder), so it doesn't matter if the files were accidentally
-          # uploaded into a nested folder.
-          BUILD_SH_PATH="$(find "$GITHUB_WORKSPACE" -maxdepth 4 -name 'build.sh' -type f | head -n1)"
+          # Finds build.sh wherever it is inside the repo (root or nested
+          # subfolders), so it doesn't matter if the files ended up nested
+          # inside extra folders.
+          BUILD_SH_PATH="$(find "$GITHUB_WORKSPACE" -maxdepth 6 -name 'build.sh' -type f | head -n1)"
           if [[ -z "$BUILD_SH_PATH" ]]; then
               echo "::error::build.sh bulunamadi! Repo icerigini kontrol edin. / build.sh not found! Check the repo contents."
-              find "$GITHUB_WORKSPACE" -maxdepth 3
+              echo "Repo icerigi / Repo contents:"
+              find "$GITHUB_WORKSPACE" -maxdepth 5
               exit 1
           fi
           PROJECT_DIR="$(dirname "$BUILD_SH_PATH")"
