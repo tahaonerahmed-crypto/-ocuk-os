@@ -2,30 +2,12 @@
 # .github/workflows/build-cocukos.yml
 #
 # Bu workflow, GitHub'in ucretsiz Ubuntu runner'ini kullanarak CocukOS ISO'sunu
-# TAMAMEN OTOMATIK olarak derler. Hicbir Linux makineye veya elle ISO indirmeye
-# gerek yoktur.
+# TAMAMEN OTOMATIK olarak derler. build.sh dosyasini repo icinde nerede olursa
+# olsun kendisi bulur, boylece klasor yapisi hatalarina karsi dayaniklidir.
 #
-# This workflow uses GitHub's free Ubuntu runner to build the CocukOS ISO
-# FULLY AUTOMATICALLY. No Linux machine or manual ISO download is needed.
-#
-# NASIL CALISTIRILIR / HOW TO RUN:
-#   1. Bu projeyi bir GitHub reposuna push edin (PUBLIC repo onerilir, cunku
-#      olusan ISO ~5GB ve public repolarda Actions depolama kotasi cok daha
-#      genistir).
-#      Push this project to a GitHub repo (PUBLIC is recommended, since the
-#      resulting ISO is ~5GB and public repos get a much larger Actions
-#      storage quota).
-#   2. GitHub'da reponun "Actions" sekmesine gidin.
-#      Go to the "Actions" tab of the repo on GitHub.
-#   3. "CocukOS ISO Derle / Build CocukOS ISO" workflow'unu secin ve
-#      "Run workflow" butonuna tiklayin.
-#      Select the "CocukOS ISO Derle / Build CocukOS ISO" workflow and click
-#      "Run workflow".
-#   4. ~30-60 dakika sonra (Actions calisma suresine bagli) is tamamlaninca,
-#      calisma sayfasindaki "Artifacts" bolumunden ISO ve SHA256 dosyasini
-#      indirebilirsiniz.
-#      After ~30-60 minutes, once the run finishes, download the ISO and its
-#      SHA256 file from the "Artifacts" section of the run page.
+# This workflow builds the CocukOS ISO FULLY AUTOMATICALLY on GitHub's free
+# Ubuntu runner. It finds build.sh wherever it is in the repo, so it is
+# resilient to folder-structure mistakes.
 # =============================================================================
 name: "CocukOS ISO Derle / Build CocukOS ISO"
 
@@ -44,6 +26,27 @@ jobs:
     steps:
       - name: "Kodu al / Checkout code"
         uses: actions/checkout@v4
+
+      - name: "Proje kok dizinini bul / Locate project root"
+        id: locate
+        run: |
+          set -e
+          # build.sh dosyasi repo icinde nerede olursa olsun (ana dizinde
+          # veya bir alt klasorde) otomatik olarak bulunur, boylece dosyalarin
+          # yanlislikla bir alt klasore yuklenmis olmasi sorun olmaz.
+          #
+          # Finds build.sh wherever it is inside the repo (root or a
+          # subfolder), so it doesn't matter if the files were accidentally
+          # uploaded into a nested folder.
+          BUILD_SH_PATH="$(find "$GITHUB_WORKSPACE" -maxdepth 4 -name 'build.sh' -type f | head -n1)"
+          if [[ -z "$BUILD_SH_PATH" ]]; then
+              echo "::error::build.sh bulunamadi! Repo icerigini kontrol edin. / build.sh not found! Check the repo contents."
+              find "$GITHUB_WORKSPACE" -maxdepth 3
+              exit 1
+          fi
+          PROJECT_DIR="$(dirname "$BUILD_SH_PATH")"
+          echo "Bulundu / Found: $PROJECT_DIR"
+          echo "project_dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
 
       - name: "Disk alani acilsin / Free up disk space"
         run: |
@@ -67,11 +70,13 @@ jobs:
               squashfs-tools xorriso isolinux syslinux-utils rsync wget
 
       - name: "Script izinleri / Script permissions"
+        working-directory: ${{ steps.locate.outputs.project_dir }}
         run: |
           chmod +x build.sh scripts/*.sh scripts/lib/*.sh test/*.sh
           chmod +x chroot-payload/usr/local/sbin/*.sh
 
       - name: "CocukOS ISO derleniyor / Build CocukOS ISO"
+        working-directory: ${{ steps.locate.outputs.project_dir }}
         env:
           COCUKOS_WORKDIR: /mnt/cocukos-work
           COCUKOS_OUTDIR: /mnt/cocukos-output
