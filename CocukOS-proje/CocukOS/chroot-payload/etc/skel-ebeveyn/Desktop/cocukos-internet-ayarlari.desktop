@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=CocukOS Internet Ayarlari
+Name[en]=CocukOS Internet Settings
+Comment=Cocugun erisebilecegi siteleri duzenleyin / Edit the sites your child can access
+Exec=pkexec /usr/local/sbin/cocukos-liste-gui.sh
+Icon=preferences-system-network
+Terminal=false
+Categories=Settings;

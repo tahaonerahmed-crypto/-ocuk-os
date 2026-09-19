@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Internet (Firefox)
+Comment=Guvenli internet tarayicisi / Safe web browser
+Exec=firefox
+Icon=firefox
+Terminal=false
+Categories=Network;

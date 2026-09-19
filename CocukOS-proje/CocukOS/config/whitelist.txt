@@ -1,0 +1,30 @@
+# =============================================================================
+# CocukOS - Izin Verilen Siteler / Allowed Sites Whitelist
+#
+# Kurallar / Rules:
+#   - Her satira bir alan adi yazin (www yazmayin, ana alan adi yeterli).
+#     One domain per line (do not write www, the bare domain is enough).
+#   - "#" ile baslayan satirlar yorumdur / lines starting with "#" are comments.
+#   - Alt alan adlari otomatik dahildir (ornegin "wikipedia.org" yazarsaniz
+#     "tr.wikipedia.org" da otomatik olarak izinli olur).
+#     Subdomains are automatically included.
+#
+# Bu dosyayi degistirdikten sonra EBEVEYN hesabindan asagidaki komutu calistirin:
+# After editing this file, run this command from the EBEVEYN (parent) account:
+#
+#     sudo /usr/local/sbin/cocukos-guncelle-liste.sh
+#
+# veya Ebeveyn masaustundeki "CocukOS Internet Ayarlari" kisayolunu kullanin.
+# or use the "CocukOS Internet Settings" shortcut on the Ebeveyn desktop.
+# =============================================================================
+
+wikipedia.org
+khanacademy.org
+code.org
+scratch.mit.edu
+duolingo.com
+tinkercad.com
+pbskids.org
+eba.gov.tr
+nasa.gov
+kodable.com

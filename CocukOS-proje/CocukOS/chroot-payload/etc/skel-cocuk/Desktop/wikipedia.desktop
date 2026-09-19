@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Vikipedi
+Comment=Ansiklopedi / Encyclopedia
+Exec=firefox https://tr.wikipedia.org
+Icon=applications-education
+Terminal=false
+Categories=Education;
